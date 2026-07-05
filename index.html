@@ -1,0 +1,1953 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Logic Core - Infinite Canvas</title>
+    <!-- Tailwind CSS for minimalist controls styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #fafafa;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            user-select: none;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body class="relative">
+
+    <!-- UI Toggle Button -->
+    <button id="ui-toggle-btn"
+        class="absolute top-4 right-4 z-20 px-3 py-1.5 bg-white/90 backdrop-blur-md border border-neutral-200/80 hover:bg-neutral-100 text-neutral-700 rounded-lg shadow-sm transition font-sans font-medium text-[11px]">
+        Hide UI
+    </button>
+
+    <!-- Minimal Overlay Controls -->
+    <div id="main-controls" class="absolute top-4 left-4 z-10 flex flex-col gap-2 pointer-events-none max-w-sm">
+        <!-- Level of Detail Indicator & Zoom Controls -->
+        <div
+            class="bg-white/90 backdrop-blur-md border border-neutral-200/80 px-4 py-3 rounded-xl shadow-lg pointer-events-auto flex flex-col gap-2.5 text-xs text-neutral-600 font-mono">
+            <div class="flex items-center justify-between gap-6">
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-1.5">
+                        <span>LOD: <strong id="lod-indicator" class="text-indigo-600 font-bold">Micro</strong></span>
+                    </div>
+                    <span>Zoom: <span id="zoom-indicator">100%</span></span>
+                </div>
+                <div class="flex gap-2">
+                    <button id="auto-clock-btn"
+                        class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-md transition font-sans font-medium text-[11px] flex items-center gap-1.5 hidden">
+                        <span id="clock-status-dot" class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                        Auto Clock
+                    </button>
+                    <button id="copy-layout-btn"
+                        class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-md transition font-sans font-medium text-[11px]">
+                        Copy Layout
+                    </button>
+                    <button id="reset-view-btn"
+                        class="px-2.5 py-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-md transition font-sans font-medium text-[11px]">
+                        Reset View
+                    </button>
+                </div>
+            </div>
+
+            <!-- LOD Selector Buttons -->
+            <div class="flex gap-1 bg-neutral-100 p-1 rounded-lg">
+                <button id="lod-dyn-btn"
+                    class="flex-1 px-1.5 py-1 text-[10px] rounded font-bold bg-white shadow-sm text-indigo-700 transition">Dynamic</button>
+                <button id="lod-mic-btn"
+                    class="flex-1 px-1.5 py-1 text-[10px] rounded font-medium text-neutral-500 hover:text-neutral-700 transition">Micro</button>
+                <button id="lod-mes-btn"
+                    class="flex-1 px-1.5 py-1 text-[10px] rounded font-medium text-neutral-500 hover:text-neutral-700 transition">Meso</button>
+                <button id="lod-mac-btn"
+                    class="flex-1 px-1.5 py-1 text-[10px] rounded font-medium text-neutral-500 hover:text-neutral-700 transition">Macro</button>
+            </div>
+
+            <div class="h-[1px] bg-neutral-100 my-0.5"></div>
+
+            <!-- Interactive Presets Quick Help -->
+            <div class="flex flex-col gap-1.5 font-sans">
+                <span class="text-[10px] uppercase tracking-wider font-bold text-neutral-400">Keyboard Presets</span>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="preset-1-btn"
+                        class="flex items-center justify-center gap-1 px-2 py-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-100/70 transition font-medium text-left">
+                        <kbd
+                            class="px-1 py-0.2 bg-white border border-indigo-200 rounded text-[9px] font-mono font-bold">1</kbd>
+                        <span>CMOS NAND</span>
+                    </button>
+                    <button id="preset-2-btn"
+                        class="flex items-center justify-center gap-1 px-2 py-1.5 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-100/70 transition font-medium text-left">
+                        <kbd
+                            class="px-1 py-0.2 bg-white border border-emerald-200 rounded text-[9px] font-mono font-bold">2</kbd>
+                        <span>CMOS Arrays</span>
+                    </button>
+                    <button id="preset-3-btn"
+                        class="flex items-center justify-center gap-1 px-2 py-1.5 bg-cyan-50 border border-cyan-100 text-cyan-700 rounded-lg hover:bg-cyan-100/70 transition font-medium text-left">
+                        <kbd
+                            class="px-1 py-0.2 bg-white border border-cyan-200 rounded text-[9px] font-mono font-bold">3</kbd>
+                        <span>CMOS Latches</span>
+                    </button>
+                    <button id="preset-4-btn"
+                        class="flex items-center justify-center gap-1 px-2 py-1.5 bg-rose-50 border border-rose-100 text-rose-700 rounded-lg hover:bg-rose-100/70 transition font-medium text-left">
+                        <kbd
+                            class="px-1 py-0.2 bg-white border border-rose-200 rounded text-[9px] font-mono font-bold">4</kbd>
+                        <span>ALU & Clock</span>
+                    </button>
+                </div>
+
+                <div class="h-[1px] bg-neutral-100 my-0.5"></div>
+
+                <span class="text-[10px] uppercase tracking-wider font-bold text-neutral-400">Navigation</span>
+                <div class="text-[10px] text-neutral-500 space-y-1 leading-relaxed font-sans">
+                    <div>• <strong>Pan:</strong> Scroll up/down/left/right OR Right-Click Drag</div>
+                    <div>• <strong>Zoom:</strong> Hold <kbd
+                            class="px-1 bg-neutral-100 border border-neutral-200 rounded font-mono text-[9px]">Space</kbd>
+                        while scrolling, or use <kbd
+                            class="px-1 bg-neutral-100 border border-neutral-200 rounded font-mono text-[9px]">↑</kbd>
+                        <kbd class="px-1 bg-neutral-100 border border-neutral-200 rounded font-mono text-[9px]">↓</kbd>
+                        Arrow Keys
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Truth Table Panel (Compact & Minimalist - dynamically shown) -->
+    <div id="truth-table-panel"
+        class="absolute bottom-4 right-4 z-10 bg-white/80 backdrop-blur-sm border border-neutral-200/60 px-2.5 py-2 rounded-lg shadow-sm pointer-events-auto text-[10px] font-mono min-w-[110px]">
+        <div
+            class="font-semibold text-neutral-500 mb-1 pb-1 border-b border-neutral-100 flex items-center justify-between gap-4">
+            <span>NAND (CMOS)</span>
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        </div>
+        <div class="space-y-0.5 text-neutral-400">
+            <div id="row-00" class="flex justify-between gap-4 px-1 rounded transition-colors"><span>0 ⊼ 0</span>
+                <span>1</span>
+            </div>
+            <div id="row-01" class="flex justify-between gap-4 px-1 rounded transition-colors"><span>0 ⊼ 1</span>
+                <span>1</span>
+            </div>
+            <div id="row-10" class="flex justify-between gap-4 px-1 rounded transition-colors"><span>1 ⊼ 0</span>
+                <span>1</span>
+            </div>
+            <div id="row-11" class="flex justify-between gap-4 px-1 rounded transition-colors"><span>1 ⊼ 1</span>
+                <span>0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- The Canvas Viewport -->
+    <canvas id="viewport"></canvas>
+
+    <script>
+        const canvas = document.getElementById('viewport');
+        const ctx = canvas.getContext('2d');
+
+        // State variables for Transform Matrix (Panning and Zooming)
+        let zoom = 1.0;
+        let pan = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+        let mousePos = { x: 0, y: 0 };
+        let isPanning = false;
+        let startPan = { x: 0, y: 0 };
+
+        // Key and Modifier States
+        let isSpacePressed = false;
+        let isUiVisible = true;
+
+        // LOD Freeze/Override State variables
+        let manualLodOverride = 'Dynamic'; // 'Dynamic', 'Micro', 'Meso', 'Macro'
+
+        // Dragging states
+        let draggedVisual = null;
+        let dragOffset = { x: 0, y: 0 };
+        let draggedGroup = null;
+        let groupDragOffsets = new Map();
+        let currentGroupBounds = new Map(); // Updated during draw loop
+
+        // Active layout tag
+        let activePreset = 1;
+
+        // Dynamic Clocking
+        let autoClockEnabled = false;
+        let masterClockInterval = null;
+
+        // ==========================================
+        // ARCHITECTURE DECOUPLING: Brain vs Canvas
+        // ==========================================
+        const Core = {
+            logic: new Map(),   // THE BRAIN: Pure mathematical components (transistors, sources)
+            visuals: new Map(), // THE CANVAS: Physical positions and bounds
+            wires: [],          // THE CONNECTIONS: Routing data
+            macros: new Map(),  // Phase 2: Abstraction Engine LUTs
+
+            clear() {
+                this.logic.clear();
+                this.visuals.clear();
+                this.wires = [];
+                this.macros.clear();
+            },
+
+            addMacro(groupId, label, inputs, outputDrivers, lutFn) {
+                this.macros.set(groupId, { label, inputs, outputDrivers, lutFn });
+            },
+
+            addVcc(id, group, x, y, macroGroup = null) {
+                this.logic.set(id, { type: 'vcc', state: 1 });
+                this.visuals.set(id, { logicId: id, group, macroGroup: macroGroup || group, macroLabel: 'VCC', x, y, width: 40, height: 30, outputPort: { x: 40, y: 15 } });
+            },
+
+            addGnd(id, group, x, y, macroGroup = null) {
+                this.logic.set(id, { type: 'gnd', state: 0 });
+                this.visuals.set(id, { logicId: id, group, macroGroup: macroGroup || group, macroLabel: 'GND', x, y, width: 40, height: 30, outputPort: { x: 40, y: 15 } });
+            },
+
+            addSwitch(id, group, label, x, y, startState = 0, macroGroup = null) {
+                this.logic.set(id, { type: 'switch', state: startState });
+                this.visuals.set(id, { logicId: id, group, macroGroup: macroGroup || group, macroLabel: label, x, y, width: 80, height: 50, outputPort: { x: 80, y: 25 } });
+            },
+
+            // Transistors: Port 0 = Gate. Port 1 = Source. Output = Drain.
+            addPMOS(id, group, label, x, y, macroGroup = null) {
+                this.logic.set(id, { type: 'pmos', state: -1 }); // -1 means Z (Floating)
+                this.visuals.set(id, { logicId: id, group, macroGroup: macroGroup || group, macroLabel: label, x, y, width: 80, height: 60, inputs: [{ port: { x: 0, y: 15 } }, { port: { x: 0, y: 45 } }], outputPort: { x: 80, y: 30 } });
+            },
+
+            addNMOS(id, group, label, x, y, macroGroup = null) {
+                this.logic.set(id, { type: 'nmos', state: -1 });
+                this.visuals.set(id, { logicId: id, group, macroGroup: macroGroup || group, macroLabel: label, x, y, width: 80, height: 60, inputs: [{ port: { x: 0, y: 15 } }, { port: { x: 0, y: 45 } }], outputPort: { x: 80, y: 30 } });
+            },
+
+            addDisplay(id, group, label, x, y, macroGroup = null) {
+                this.logic.set(id, { type: 'display', state: -1 });
+                this.visuals.set(id, { logicId: id, group, macroGroup: macroGroup || group, macroLabel: label, x, y, width: 60, height: 60, inputPort: { x: 0, y: 30 } });
+            },
+
+            addWire(from, to, toPort, fromPort = 'outputPort') {
+                this.wires.push({ from, to, toPort, fromPort });
+            }
+        };
+
+        function getActualScale() {
+            return Math.pow(zoom, 4.566);
+        }
+
+        // ==========================================
+        // LAYOUTS (CMOS CIRCUITS)
+        // ==========================================
+        function loadPreset1() {
+            activePreset = 1;
+            zoom = 1.0;
+            pan = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+            Core.clear();
+
+            // Proper CMOS NAND Construction (4 Transistors)
+            Core.addSwitch('sw_a', 'CMOS NAND Demo', 'SW A', -320, -60, 0);
+            Core.addSwitch('sw_b', 'CMOS NAND Demo', 'SW B', -320, 60, 0);
+
+            Core.addVcc('vcc1', 'CMOS NAND Demo', -200, -115);
+            Core.addGnd('gnd1', 'CMOS NAND Demo', -280, 115);
+
+            // Parallel pMOS Pull-up Network
+            Core.addPMOS('p_a', 'CMOS NAND Demo', 'pMOS A', -60, -90);
+            Core.addPMOS('p_b', 'CMOS NAND Demo', 'pMOS B', -60, -10);
+
+            // Series nMOS Pull-down Network
+            Core.addNMOS('n_a', 'CMOS NAND Demo', 'nMOS A', -60, 70);
+            Core.addNMOS('n_b', 'CMOS NAND Demo', 'nMOS B', -185, 85);
+
+            Core.addDisplay('out1', 'CMOS NAND Demo', 'OUTPUT', 115, -10);
+
+            // Power routing to Sources
+            Core.addWire('vcc1', 'p_a', 1);
+            Core.addWire('vcc1', 'p_b', 1);
+            Core.addWire('gnd1', 'n_b', 1);
+            Core.addWire('n_b', 'n_a', 1); // Series connection (n_b drain -> n_a source)
+
+            // Switch routing to Gates
+            Core.addWire('sw_a', 'p_a', 0);
+            Core.addWire('sw_a', 'n_a', 0);
+            Core.addWire('sw_b', 'p_b', 0);
+            Core.addWire('sw_b', 'n_b', 0);
+
+            // Drain outputs merged to Display
+            Core.addWire('p_a', 'out1', 'inputPort');
+            Core.addWire('p_b', 'out1', 'inputPort');
+            Core.addWire('n_a', 'out1', 'inputPort');
+
+            // Phase 2: Package into Macro LUT
+            Core.addMacro('CMOS NAND Demo', 'NAND', ['sw_a', 'sw_b'], ['p_a', 'p_b', 'n_a'], (a, b) => (a === 1 && b === 1) ? 0 : 1);
+
+            evaluateCircuit();
+        }
+
+        function loadPreset2() {
+            activePreset = 2;
+            zoom = 0.80; // Zoom locked to 80% to trigger Meso mode immediately
+            pan = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+            Core.clear();
+
+            // TRACK 1: NOT Gate (2 Transistors)
+            Core.addSwitch('not_sw', 'NOT Block', 'SWITCH', -320, -900, 0);
+            Core.addVcc('not_vcc', 'NOT Block', -240, -935);
+            Core.addGnd('not_gnd', 'NOT Block', -240, -825);
+            Core.addPMOS('not_p', 'NOT Block', 'pMOS', -130, -935);
+            Core.addNMOS('not_n', 'NOT Block', 'nMOS', -130, -855);
+            Core.addDisplay('not_out', 'NOT Block', 'NOT OUT', 45, -900);
+
+            Core.addWire('not_vcc', 'not_p', 1);
+            Core.addWire('not_gnd', 'not_n', 1);
+            Core.addWire('not_sw', 'not_p', 0);
+            Core.addWire('not_sw', 'not_n', 0);
+            Core.addWire('not_p', 'not_out', 'inputPort');
+            Core.addWire('not_n', 'not_out', 'inputPort');
+
+
+            // TRACK 2: NAND Gate (4 Transistors)
+            Core.addSwitch('nand_sw1', 'NAND Block', 'SW A', -320, -480, 1);
+            Core.addSwitch('nand_sw2', 'NAND Block', 'SW B', -320, -400, 0);
+            Core.addVcc('nand_vcc', 'NAND Block', -180, -525);
+            Core.addGnd('nand_gnd', 'NAND Block', -280, -335);
+            Core.addPMOS('nand_p1', 'NAND Block', 'pMOS 1', -60, -520);
+            Core.addPMOS('nand_p2', 'NAND Block', 'pMOS 2', -60, -450);
+            Core.addNMOS('nand_n1', 'NAND Block', 'nMOS 1', -60, -380);
+            Core.addNMOS('nand_n2', 'NAND Block', 'nMOS 2', -175, -365);
+            Core.addDisplay('nand_out', 'NAND Block', 'NAND OUT', 115, -450);
+
+            Core.addWire('nand_vcc', 'nand_p1', 1);
+            Core.addWire('nand_vcc', 'nand_p2', 1);
+            Core.addWire('nand_gnd', 'nand_n2', 1);
+            Core.addWire('nand_n2', 'nand_n1', 1); // Series
+            Core.addWire('nand_sw1', 'nand_p1', 0);
+            Core.addWire('nand_sw1', 'nand_n1', 0);
+            Core.addWire('nand_sw2', 'nand_p2', 0);
+            Core.addWire('nand_sw2', 'nand_n2', 0);
+            Core.addWire('nand_p1', 'nand_out', 'inputPort');
+            Core.addWire('nand_p2', 'nand_out', 'inputPort');
+            Core.addWire('nand_n1', 'nand_out', 'inputPort');
+
+
+            // TRACK 3: NOR Gate (4 Transistors)
+            Core.addSwitch('nor_sw1', 'NOR Block', 'SW A', -320, -50, 0);
+            Core.addSwitch('nor_sw2', 'NOR Block', 'SW B', -320, 30, 0);
+            Core.addVcc('nor_vcc', 'NOR Block', -250, -120);
+            Core.addGnd('nor_gnd', 'NOR Block', -270, 140);
+            Core.addPMOS('nor_p1', 'NOR Block', 'pMOS 1', -175, -90);
+            Core.addPMOS('nor_p2', 'NOR Block', 'pMOS 2', -60, -30);
+            Core.addNMOS('nor_n1', 'NOR Block', 'nMOS 1', -60, 40);
+            Core.addNMOS('nor_n2', 'NOR Block', 'nMOS 2', -60, 110);
+            Core.addDisplay('nor_out', 'NOR Block', 'NOR OUT', 120, 0);
+
+            Core.addWire('nor_vcc', 'nor_p1', 1);
+            Core.addWire('nor_p1', 'nor_p2', 1); // Series pMOS
+            Core.addWire('nor_gnd', 'nor_n1', 1); // Parallel nMOS
+            Core.addWire('nor_gnd', 'nor_n2', 1);
+            Core.addWire('nor_sw1', 'nor_p1', 0);
+            Core.addWire('nor_sw1', 'nor_n1', 0);
+            Core.addWire('nor_sw2', 'nor_p2', 0);
+            Core.addWire('nor_sw2', 'nor_n2', 0);
+            Core.addWire('nor_p2', 'nor_out', 'inputPort');
+            Core.addWire('nor_n1', 'nor_out', 'inputPort');
+            Core.addWire('nor_n2', 'nor_out', 'inputPort');
+
+
+            // TRACK 4: AND Gate (NAND + NOT = 6 Transistors)
+            Core.addSwitch('and_sw1', 'AND Block', 'SW A', -350, 410, 0);
+            Core.addSwitch('and_sw2', 'AND Block', 'SW B', -350, 490, 0);
+            // NAND Stage
+            Core.addVcc('and_vcc1', 'AND Block', -240, 355);
+            Core.addGnd('and_gnd1', 'AND Block', -310, 545);
+            Core.addPMOS('and_p1', 'AND Block', 'pMOS', -100, 350);
+            Core.addPMOS('and_p2', 'AND Block', 'pMOS', -100, 420);
+            Core.addNMOS('and_n1', 'AND Block', 'nMOS', -100, 490);
+            Core.addNMOS('and_n2', 'AND Block', 'nMOS', -220, 505);
+            // NOT Stage
+            Core.addVcc('and_vcc2', 'AND Block', 45, 340);
+            Core.addGnd('and_gnd2', 'AND Block', 25, 540);
+            Core.addPMOS('and_p3', 'AND Block', 'pMOS', 125, 365);
+            Core.addNMOS('and_n3', 'AND Block', 'nMOS', 120, 505);
+            Core.addDisplay('and_out', 'AND Block', 'AND OUT', 280, 450);
+
+            // NAND Stage Wiring
+            Core.addWire('and_vcc1', 'and_p1', 1);
+            Core.addWire('and_vcc1', 'and_p2', 1);
+            Core.addWire('and_gnd1', 'and_n2', 1);
+            Core.addWire('and_n2', 'and_n1', 1);
+            Core.addWire('and_sw1', 'and_p1', 0);
+            Core.addWire('and_sw1', 'and_n1', 0);
+            Core.addWire('and_sw2', 'and_p2', 0);
+            Core.addWire('and_sw2', 'and_n2', 0);
+            // Route NAND Drains to NOT Gates
+            const nandDrains = ['and_p1', 'and_p2', 'and_n1'];
+            nandDrains.forEach(src => {
+                Core.addWire(src, 'and_p3', 0);
+                Core.addWire(src, 'and_n3', 0);
+            });
+            // NOT Stage Wiring
+            Core.addWire('and_vcc2', 'and_p3', 1);
+            Core.addWire('and_gnd2', 'and_n3', 1);
+            Core.addWire('and_p3', 'and_out', 'inputPort');
+            Core.addWire('and_n3', 'and_out', 'inputPort');
+
+
+            // TRACK 5: OR Gate (NOR + NOT = 6 Transistors)
+            Core.addSwitch('or_sw1', 'OR Block', 'SW A', -350, 860, 0);
+            Core.addSwitch('or_sw2', 'OR Block', 'SW B', -350, 940, 0);
+            // NOR Stage
+            Core.addVcc('or_vcc1', 'OR Block', -315, 825);
+            Core.addGnd('or_gnd1', 'OR Block', -225, 1030);
+            Core.addPMOS('or_p1', 'OR Block', 'pMOS', -210, 795);
+            Core.addPMOS('or_p2', 'OR Block', 'pMOS', -100, 860);
+            Core.addNMOS('or_n1', 'OR Block', 'nMOS', -100, 930);
+            Core.addNMOS('or_n2', 'OR Block', 'nMOS', -100, 1000);
+            // NOT Stage
+            Core.addVcc('or_vcc2', 'OR Block', 40, 805);
+            Core.addGnd('or_gnd2', 'OR Block', 20, 1025);
+            Core.addPMOS('or_p3', 'OR Block', 'pMOS', 120, 840);
+            Core.addNMOS('or_n3', 'OR Block', 'nMOS', 120, 960);
+            Core.addDisplay('or_out', 'OR Block', 'OR OUT', 280, 900);
+
+            // NOR Stage Wiring
+            Core.addWire('or_vcc1', 'or_p1', 1);
+            Core.addWire('or_p1', 'or_p2', 1);
+            Core.addWire('or_gnd1', 'or_n1', 1);
+            Core.addWire('or_gnd1', 'or_n2', 1);
+            Core.addWire('or_sw1', 'or_p1', 0);
+            Core.addWire('or_sw1', 'or_n1', 0);
+            Core.addWire('or_sw2', 'or_p2', 0);
+            Core.addWire('or_sw2', 'or_n2', 0);
+            // Route NOR Drains to NOT Gates
+            const norDrains = ['or_p2', 'or_n1', 'or_n2'];
+            norDrains.forEach(src => {
+                Core.addWire(src, 'or_p3', 0);
+                Core.addWire(src, 'or_n3', 0);
+            });
+            // NOT Stage Wiring
+            Core.addWire('or_vcc2', 'or_p3', 1);
+            Core.addWire('or_gnd2', 'or_n3', 1);
+            Core.addWire('or_p3', 'or_out', 'inputPort');
+            Core.addWire('or_n3', 'or_out', 'inputPort');
+
+            // Phase 2: Package into Macro LUTs
+            Core.addMacro('NOT Block', 'NOT', ['not_sw'], ['not_p', 'not_n'], (a) => a === 1 ? 0 : 1);
+            Core.addMacro('NAND Block', 'NAND', ['nand_sw1', 'nand_sw2'], ['nand_p1', 'nand_p2', 'nand_n1'], (a, b) => (a === 1 && b === 1) ? 0 : 1);
+            Core.addMacro('NOR Block', 'NOR', ['nor_sw1', 'nor_sw2'], ['nor_p2', 'nor_n1', 'nor_n2'], (a, b) => (a === 0 && b === 0) ? 1 : 0);
+            Core.addMacro('AND Block', 'AND', ['and_sw1', 'and_sw2'], ['and_p3', 'and_n3'], (a, b) => (a === 1 && b === 1) ? 1 : 0);
+            Core.addMacro('OR Block', 'OR', ['or_sw1', 'or_sw2'], ['or_p3', 'or_n3'], (a, b) => (a === 1 || b === 1) ? 1 : 0);
+
+            evaluateCircuit();
+        }
+
+        function loadPreset3() {
+            activePreset = 3;
+            zoom = 0.80; // Zoom locked to 80% to trigger Meso mode immediately
+            pan = { x: window.innerWidth / 2 + 100, y: window.innerHeight / 2 };
+            Core.clear();
+
+            // TRACK 1: Transmission Gate (2 Transistors)
+            Core.addSwitch('tg_sig', 'TG Demo', 'SIGNAL', -350, -800, 0);
+            Core.addSwitch('tg_en', 'TG Demo', 'ENABLE', -350, -700, 0);
+            Core.addSwitch('tg_en_b', 'TG Demo', 'EN_BAR', -350, -620, 1);
+
+            Core.addPMOS('tg_p', 'TG Demo', 'pMOS', -180, -780);
+            Core.addNMOS('tg_n', 'TG Demo', 'nMOS', -180, -680);
+            Core.addDisplay('tg_out', 'TG Demo', 'TG OUT', 20, -730);
+
+            Core.addWire('tg_sig', 'tg_p', 1);
+            Core.addWire('tg_sig', 'tg_n', 1);
+            Core.addWire('tg_en_b', 'tg_p', 0);
+            Core.addWire('tg_en', 'tg_n', 0);
+            Core.addWire('tg_p', 'tg_out', 'inputPort');
+            Core.addWire('tg_n', 'tg_out', 'inputPort');
+
+            Core.addMacro('TG Demo', 'TRANS. GATE', ['tg_sig', 'tg_en', 'tg_en_b'], ['tg_p', 'tg_n'], (sig, en, en_b) => (en === 1 && en_b === 0) ? sig : -1);
+
+            function buildDLatch(prefix, group, x, y, macroGroup = null) {
+                // TG1
+                Core.addPMOS(`${prefix}_t1_p`, group, 'pMOS', x, y, macroGroup);
+                Core.addNMOS(`${prefix}_t1_n`, group, 'nMOS', x, y + 80, macroGroup);
+                // Inv1
+                Core.addVcc(`${prefix}_v1`, group, x + 110, y - 20, macroGroup);
+                Core.addGnd(`${prefix}_g1`, group, x + 110, y + 150, macroGroup);
+                Core.addPMOS(`${prefix}_i1_p`, group, 'pMOS', x + 140, y + 10, macroGroup);
+                Core.addNMOS(`${prefix}_i1_n`, group, 'nMOS', x + 140, y + 90, macroGroup);
+                // Inv2
+                Core.addVcc(`${prefix}_v2`, group, x + 250, y - 20, macroGroup);
+                Core.addGnd(`${prefix}_g2`, group, x + 250, y + 150, macroGroup);
+                Core.addPMOS(`${prefix}_i2_p`, group, 'pMOS', x + 280, y + 10, macroGroup);
+                Core.addNMOS(`${prefix}_i2_n`, group, 'nMOS', x + 280, y + 90, macroGroup);
+                // TG2 (Feedback)
+                Core.addPMOS(`${prefix}_t2_p`, group, 'pMOS', x + 140, y + 180, macroGroup);
+                Core.addNMOS(`${prefix}_t2_n`, group, 'nMOS', x + 140, y + 260, macroGroup);
+
+                // Wiring TG1 to Inv1
+                Core.addWire(`${prefix}_t1_p`, `${prefix}_i1_p`, 0);
+                Core.addWire(`${prefix}_t1_n`, `${prefix}_i1_p`, 0);
+                Core.addWire(`${prefix}_t1_p`, `${prefix}_i1_n`, 0);
+                Core.addWire(`${prefix}_t1_n`, `${prefix}_i1_n`, 0);
+
+                // Wiring Inv1
+                Core.addWire(`${prefix}_v1`, `${prefix}_i1_p`, 1);
+                Core.addWire(`${prefix}_g1`, `${prefix}_i1_n`, 1);
+                Core.addWire(`${prefix}_i1_p`, `${prefix}_i2_p`, 0);
+                Core.addWire(`${prefix}_i1_n`, `${prefix}_i2_p`, 0);
+                Core.addWire(`${prefix}_i1_p`, `${prefix}_i2_n`, 0);
+                Core.addWire(`${prefix}_i1_n`, `${prefix}_i2_n`, 0);
+
+                // Wiring Inv2
+                Core.addWire(`${prefix}_v2`, `${prefix}_i2_p`, 1);
+                Core.addWire(`${prefix}_g2`, `${prefix}_i2_n`, 1);
+
+                // Wiring Feedback Inv2 to TG2
+                Core.addWire(`${prefix}_i2_p`, `${prefix}_t2_p`, 1);
+                Core.addWire(`${prefix}_i2_n`, `${prefix}_t2_p`, 1);
+                Core.addWire(`${prefix}_i2_p`, `${prefix}_t2_n`, 1);
+                Core.addWire(`${prefix}_i2_n`, `${prefix}_t2_n`, 1);
+
+                // Wiring TG2 to Inv1
+                Core.addWire(`${prefix}_t2_p`, `${prefix}_i1_p`, 0);
+                Core.addWire(`${prefix}_t2_n`, `${prefix}_i1_p`, 0);
+                Core.addWire(`${prefix}_t2_p`, `${prefix}_i1_n`, 0);
+                Core.addWire(`${prefix}_t2_n`, `${prefix}_i1_n`, 0);
+
+                return {
+                    dInP: `${prefix}_t1_p`, dInN: `${prefix}_t1_n`,
+                    qOutP: `${prefix}_i2_p`, qOutN: `${prefix}_i2_n`,
+                    tg1EnP: `${prefix}_t1_p`, tg1EnN: `${prefix}_t1_n`,
+                    tg2EnP: `${prefix}_t2_p`, tg2EnN: `${prefix}_t2_n`
+                };
+            }
+
+            // TRACK 2: CMOS D-Latch (8 Transistors)
+            Core.addSwitch('dl_d', 'D-Latch Demo', 'D', -350, -400, 0);
+            Core.addSwitch('dl_e', 'D-Latch Demo', 'E', -350, -320, 1);
+            Core.addSwitch('dl_eb', 'D-Latch Demo', 'E_B', -350, -240, 0);
+
+            const latch = buildDLatch('dl', 'D-Latch Demo', -180, -400);
+            Core.addDisplay('dl_out', 'D-Latch Demo', 'Q', 200, -350);
+
+            Core.addWire('dl_d', latch.dInP, 1);
+            Core.addWire('dl_d', latch.dInN, 1);
+            Core.addWire('dl_eb', latch.tg1EnP, 0);
+            Core.addWire('dl_e', latch.tg1EnN, 0);
+            Core.addWire('dl_e', latch.tg2EnP, 0);
+            Core.addWire('dl_eb', latch.tg2EnN, 0);
+
+            Core.addWire(latch.qOutP, 'dl_out', 'inputPort');
+            Core.addWire(latch.qOutN, 'dl_out', 'inputPort');
+
+            let dlState = 0;
+            Core.addMacro('D-Latch Demo', 'D-LATCH', ['dl_d', 'dl_e'], [`dl_i2_p`, `dl_i2_n`], (d, e) => {
+                if (e === 1 && d !== -1) dlState = d;
+                return dlState;
+            });
+
+            // TRACK 3: Master-Slave D Flip-Flop
+            Core.addSwitch('ff_d', 'D-FF Demo', 'D', -400, 40, 0);
+            Core.addSwitch('ff_clk', 'D-FF Demo', 'CLK', -400, 120, 0);
+            Core.addSwitch('ff_clkb', 'D-FF Demo', 'CLK_B', -400, 200, 1);
+
+            const master = buildDLatch('m', 'D-FF Demo', -200, 20);
+            const slave = buildDLatch('s', 'D-FF Demo', 200, 20);
+            Core.addDisplay('ff_out', 'D-FF Demo', 'Q', 580, 70);
+
+            Core.addWire('ff_d', master.dInP, 1);
+            Core.addWire('ff_d', master.dInN, 1);
+            Core.addWire('ff_clk', master.tg1EnP, 0);
+            Core.addWire('ff_clkb', master.tg1EnN, 0);
+            Core.addWire('ff_clkb', master.tg2EnP, 0);
+            Core.addWire('ff_clk', master.tg2EnN, 0);
+
+            Core.addWire(master.qOutP, slave.dInP, 1);
+            Core.addWire(master.qOutN, slave.dInP, 1);
+            Core.addWire(master.qOutP, slave.dInN, 1);
+            Core.addWire(master.qOutN, slave.dInN, 1);
+
+            Core.addWire('ff_clkb', slave.tg1EnP, 0);
+            Core.addWire('ff_clk', slave.tg1EnN, 0);
+            Core.addWire('ff_clk', slave.tg2EnP, 0);
+            Core.addWire('ff_clkb', slave.tg2EnN, 0);
+
+            Core.addWire(slave.qOutP, 'ff_out', 'inputPort');
+            Core.addWire(slave.qOutN, 'ff_out', 'inputPort');
+
+            let ffMasterState = 0;
+            let ffSlaveState = 0;
+            Core.addMacro('D-FF Demo', 'D FLIP-FLOP', ['ff_d', 'ff_clk'], [`s_i2_p`, `s_i2_n`], (d, clk) => {
+                if (clk === 0 && d !== -1) ffMasterState = d;
+                if (clk === 1) ffSlaveState = ffMasterState;
+                return ffSlaveState;
+            });
+
+            // TRACK 4: 8-Bit Register
+            Core.addSwitch('reg_clk', 'REG Switches', 'CLK', -450, 600, 0);
+            Core.addSwitch('reg_clkb', 'REG Switches', 'CLK_B', -450, 680, 1);
+
+            let regMasterState = Array(8).fill(0);
+            let regSlaveState = Array(8).fill(0);
+
+            for (let i = 0; i < 8; i++) {
+                const yOffset = 450 + (i * 480);
+                const groupName = `D-FF ${i}`; // Meso group
+                const macroGroupName = `8-BIT REGISTER`; // Macro group
+
+                Core.addSwitch(`r_d${i}`, 'REG Switches', `D${i}`, -350, yOffset + 40, 0);
+
+                const rMaster = buildDLatch(`rm${i}`, groupName, -200, yOffset + 20, macroGroupName);
+                const rSlave = buildDLatch(`rs${i}`, groupName, 200, yOffset + 20, macroGroupName);
+
+                Core.addDisplay(`r_out${i}`, groupName, `Q${i}`, 580, yOffset + 70, macroGroupName);
+
+                Core.addWire(`r_d${i}`, rMaster.dInP, 1);
+                Core.addWire(`r_d${i}`, rMaster.dInN, 1);
+
+                Core.addWire('reg_clk', rMaster.tg1EnP, 0);
+                Core.addWire('reg_clkb', rMaster.tg1EnN, 0);
+                Core.addWire('reg_clkb', rMaster.tg2EnP, 0);
+                Core.addWire('reg_clk', rMaster.tg2EnN, 0);
+
+                Core.addWire(rMaster.qOutP, rSlave.dInP, 1);
+                Core.addWire(rMaster.qOutN, rSlave.dInP, 1);
+                Core.addWire(rMaster.qOutP, rSlave.dInN, 1);
+                Core.addWire(rMaster.qOutN, rSlave.dInN, 1);
+
+                Core.addWire('reg_clkb', rSlave.tg1EnP, 0);
+                Core.addWire('reg_clk', rSlave.tg1EnN, 0);
+                Core.addWire('reg_clk', rSlave.tg2EnP, 0);
+                Core.addWire('reg_clkb', rSlave.tg2EnN, 0);
+
+                Core.addWire(rSlave.qOutP, `r_out${i}`, 'inputPort');
+                Core.addWire(rSlave.qOutN, `r_out${i}`, 'inputPort');
+
+                (function (idx) {
+                    Core.addMacro(groupName, `D-FF ${idx}`, [`r_d${idx}`, 'reg_clk'], [`rs${idx}_i2_p`, `rs${idx}_i2_n`], (d, clk) => {
+                        if (clk === 0 && d !== -1) regMasterState[idx] = d;
+                        if (clk === 1) regSlaveState[idx] = regMasterState[idx];
+                        return regSlaveState[idx];
+                    });
+                })(i);
+            }
+
+            evaluateCircuit();
+        }
+
+        function loadPreset4() {
+            activePreset = 4;
+            zoom = 0.65; // Make default zoom 65%
+            pan = { x: window.innerWidth / 2 + 100, y: window.innerHeight / 2 - 100 };
+            Core.clear();
+            document.getElementById('auto-clock-btn').classList.remove('hidden');
+
+            // Control
+            Core.addSwitch('alu_op', 'CONTROL PANEL', 'OP: 0=ADD, 1=AND', -1395, -400, 0);
+            Core.addSwitch('ff_clk', 'CONTROL PANEL', 'CLK', -1395, 150, 0);
+            Core.addSwitch('ff_clkb', 'CONTROL PANEL', 'CLK_B', -1395, 250, 1);
+
+            let regMasterState = Array(8).fill(0);
+            let regSlaveState = Array(8).fill(0);
+
+            // Expand the DLatch layout spacing for Micro LOD inside the Meso block
+            function buildDLatchLoc(prefix, group, x, y, macroGroup = null) {
+                Core.addPMOS(`${prefix}_t1_p`, group, 'pMOS', x, y, macroGroup);
+                Core.addNMOS(`${prefix}_t1_n`, group, 'nMOS', x, y + 100, macroGroup);
+                Core.addVcc(`${prefix}_v1`, group, x + 150, y - 20, macroGroup);
+                Core.addGnd(`${prefix}_g1`, group, x + 150, y + 170, macroGroup);
+                Core.addPMOS(`${prefix}_i1_p`, group, 'pMOS', x + 180, y + 10, macroGroup);
+                Core.addNMOS(`${prefix}_i1_n`, group, 'nMOS', x + 180, y + 110, macroGroup);
+                Core.addVcc(`${prefix}_v2`, group, x + 310, y - 20, macroGroup);
+                Core.addGnd(`${prefix}_g2`, group, x + 310, y + 170, macroGroup);
+                Core.addPMOS(`${prefix}_i2_p`, group, 'pMOS', x + 340, y + 10, macroGroup);
+                Core.addNMOS(`${prefix}_i2_n`, group, 'nMOS', x + 340, y + 110, macroGroup);
+                Core.addPMOS(`${prefix}_t2_p`, group, 'pMOS', x + 180, y + 220, macroGroup);
+                Core.addNMOS(`${prefix}_t2_n`, group, 'nMOS', x + 180, y + 320, macroGroup);
+
+                Core.addWire(`${prefix}_t1_p`, `${prefix}_i1_p`, 0); Core.addWire(`${prefix}_t1_n`, `${prefix}_i1_p`, 0);
+                Core.addWire(`${prefix}_t1_p`, `${prefix}_i1_n`, 0); Core.addWire(`${prefix}_t1_n`, `${prefix}_i1_n`, 0);
+                Core.addWire(`${prefix}_v1`, `${prefix}_i1_p`, 1); Core.addWire(`${prefix}_g1`, `${prefix}_i1_n`, 1);
+                Core.addWire(`${prefix}_i1_p`, `${prefix}_i2_p`, 0); Core.addWire(`${prefix}_i1_n`, `${prefix}_i2_p`, 0);
+                Core.addWire(`${prefix}_i1_p`, `${prefix}_i2_n`, 0); Core.addWire(`${prefix}_i1_n`, `${prefix}_i2_n`, 0);
+                Core.addWire(`${prefix}_v2`, `${prefix}_i2_p`, 1); Core.addWire(`${prefix}_g2`, `${prefix}_i2_n`, 1);
+                Core.addWire(`${prefix}_i2_p`, `${prefix}_t2_p`, 1); Core.addWire(`${prefix}_i2_n`, `${prefix}_t2_p`, 1);
+                Core.addWire(`${prefix}_i2_p`, `${prefix}_t2_n`, 1); Core.addWire(`${prefix}_i2_n`, `${prefix}_t2_n`, 1);
+                Core.addWire(`${prefix}_t2_p`, `${prefix}_i1_p`, 0); Core.addWire(`${prefix}_t2_n`, `${prefix}_i1_p`, 0);
+                Core.addWire(`${prefix}_t2_p`, `${prefix}_i1_n`, 0); Core.addWire(`${prefix}_t2_n`, `${prefix}_i1_n`, 0);
+
+                return {
+                    dInP: `${prefix}_t1_p`, dInN: `${prefix}_t1_n`,
+                    qOutP: `${prefix}_i2_p`, qOutN: `${prefix}_i2_n`,
+                    tg1EnP: `${prefix}_t1_p`, tg1EnN: `${prefix}_t1_n`,
+                    tg2EnP: `${prefix}_t2_p`, tg2EnN: `${prefix}_t2_n`
+                };
+            }
+
+            let prevCarry = null;
+
+            for (let i = 0; i < 8; i++) {
+                const bitY = -2000 + i * 500; // Space them out heavily on the Y-axis
+                const aluGroup = `ALU Bit ${i}`;
+                const regGroup = `REG Bit ${i}`;
+
+                // In Macro mode, combine into monolithic big blocks!
+                const aluMacro = `8-BIT ALU`;
+                const regMacro = `8-BIT REGISTER`;
+
+                // Group all data switches into monolithic boxes so they span the entire height
+                // and don't squish the text labels.
+                Core.addSwitch(`a_${i}`, `DATA BUS A`, `A${i}`, -1125, bitY + 120, 0);
+                Core.addSwitch(`b_${i}`, `DATA BUS B`, `B${i}`, -1000, bitY + 120, 0);
+
+                // ALU Core Transistors (28T Symbolic Block)
+                let pmosList = [], nmosList = [];
+                for (let t = 0; t < 14; t++) {
+                    const tx = -600 + (t % 7) * 60; // Space out more horizontally
+                    const tyP = bitY + Math.floor(t / 7) * 80; // Space out more vertically
+                    const tyN = bitY + 200 + Math.floor(t / 7) * 80;
+                    Core.addPMOS(`alu_${i}_p${t}`, aluGroup, 'p', tx, tyP, aluMacro);
+                    Core.addNMOS(`alu_${i}_n${t}`, aluGroup, 'n', tx, tyN, aluMacro);
+                    pmosList.push(`alu_${i}_p${t}`);
+                    nmosList.push(`alu_${i}_n${t}`);
+
+                    if (t < 7) { Core.addVcc(`alu_${i}_v${t}`, aluGroup, tx + 20, tyP - 30, aluMacro); Core.addWire(`alu_${i}_v${t}`, `alu_${i}_p${t}`, 1); }
+                    else { Core.addGnd(`alu_${i}_g${t}`, aluGroup, tx + 20, tyN + 50, aluMacro); Core.addWire(`alu_${i}_g${t}`, `alu_${i}_n${t}`, 1); }
+
+                    // Connect the transistors together horizontally so they don't look disconnected
+                    if (t % 7 < 6) {
+                        Core.addWire(`alu_${i}_p${t}`, `alu_${i}_p${t + 1}`, 1);
+                        Core.addWire(`alu_${i}_n${t}`, `alu_${i}_n${t + 1}`, 1);
+                    }
+                }
+
+                // Connect switches to the ALU transistor gates so it looks like a real interconnected block
+                Core.addWire(`a_${i}`, `alu_${i}_p0`, 0);
+                Core.addWire(`a_${i}`, `alu_${i}_n0`, 0);
+                Core.addWire(`b_${i}`, `alu_${i}_p1`, 0);
+                Core.addWire(`b_${i}`, `alu_${i}_n1`, 0);
+                Core.addWire(`alu_op`, `alu_${i}_p2`, 0);
+                Core.addWire(`alu_op`, `alu_${i}_n2`, 0);
+                if (prevCarry) {
+                    Core.addWire(prevCarry, `alu_${i}_p3`, 0);
+                    Core.addWire(prevCarry, `alu_${i}_n3`, 0);
+                }
+
+                const inputs = [`alu_op`, `a_${i}`, `b_${i}`];
+                if (i > 0) inputs.push(prevCarry);
+
+                Core.addMacro(aluGroup, `ALU Bit ${i}`, inputs, [pmosList, nmosList], (...vals) => {
+                    const op = vals[0];
+                    const a = vals[1] === -1 ? 0 : vals[1];
+                    const b = vals[2] === -1 ? 0 : vals[2];
+                    const cin = (i === 0) ? 0 : (vals[3] === -1 ? 0 : vals[3]);
+                    let sum = 0, cout = 0;
+                    if (op === 0) { sum = a ^ b ^ cin; cout = ((a & b) | (b & cin) | (a & cin)) ? 1 : 0; }
+                    else { sum = a & b; cout = 0; }
+                    return [sum, cout];
+                });
+
+                Core.addDisplay(`alu_cout_${i}`, aluGroup, `C${i + 1}`, -50, bitY + 160, aluMacro);
+                Core.addWire(`alu_${i}_n6`, `alu_cout_${i}`, 'inputPort');
+                prevCarry = `alu_${i}_n6`; // Set carry for next bit using n6 (last element in nmos row)
+
+                // Register Math Core - Space out significantly on X-axis
+                const rMaster = buildDLatchLoc(`rm${i}`, regGroup, 200, bitY + 20, regMacro);
+                const rSlave = buildDLatchLoc(`rs${i}`, regGroup, 800, bitY + 20, regMacro);
+                Core.addDisplay(`r_out${i}`, regGroup, `Q${i}`, 1400, bitY + 80, regMacro);
+
+                // Wire ALU sum out to D-Latch. We use p6 as symbolic sum output.
+                Core.addWire(`alu_${i}_p6`, rMaster.dInP, 1);
+                Core.addWire(`alu_${i}_p6`, rMaster.dInN, 1);
+
+                Core.addWire('ff_clk', rMaster.tg1EnP, 0);
+                Core.addWire('ff_clkb', rMaster.tg1EnN, 0);
+                Core.addWire('ff_clkb', rMaster.tg2EnP, 0);
+                Core.addWire('ff_clk', rMaster.tg2EnN, 0);
+
+                Core.addWire(rMaster.qOutP, rSlave.dInP, 1);
+                Core.addWire(rMaster.qOutN, rSlave.dInP, 1);
+                Core.addWire(rMaster.qOutP, rSlave.dInN, 1);
+                Core.addWire(rMaster.qOutN, rSlave.dInN, 1);
+
+                Core.addWire('ff_clkb', rSlave.tg1EnP, 0);
+                Core.addWire('ff_clk', rSlave.tg1EnN, 0);
+                Core.addWire('ff_clk', rSlave.tg2EnP, 0);
+                Core.addWire('ff_clkb', rSlave.tg2EnN, 0);
+
+                Core.addWire(rSlave.qOutP, `r_out${i}`, 'inputPort');
+                Core.addWire(rSlave.qOutN, `r_out${i}`, 'inputPort');
+
+                (function (idx) {
+                    Core.addMacro(regGroup, `FF ${idx}`, [`alu_${idx}_p6`, 'ff_clk'], [`rs${idx}_i2_p`, `rs${idx}_i2_n`], (d, clk) => {
+                        if (clk === 0 && d !== -1) regMasterState[idx] = d;
+                        if (clk === 1) regSlaveState[idx] = regMasterState[idx];
+                        return regSlaveState[idx];
+                    });
+                })(i);
+            }
+            evaluateCircuit();
+        }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            if (pan.x === 0 && pan.y === 0) {
+                pan.x = canvas.width / 2;
+                pan.y = canvas.height / 2;
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function screenToWorld(sX, sY) {
+            const scale = getActualScale();
+            return { x: (sX - pan.x) / scale, y: (sY - pan.y) / scale };
+        }
+
+        // ==========================================
+        // THE BRAIN (Logic Engine Math Loop)
+        // ==========================================
+        function evaluateCircuit() {
+            const isMicro = getLODMode() === 'Micro';
+            const maxCycles = isMicro ? 12 : 1; // LUT only needs 1 pass
+
+            for (let cycle = 0; cycle < maxCycles; cycle++) {
+                Core.logic.forEach((node, id) => {
+                    if (node.type === 'switch' || node.type === 'vcc' || node.type === 'gnd') {
+                        // Fixed or interactively set states. VCC is always 1, GND is always 0.
+                    } else if (isMicro) {
+                        // MICRO LOD: Raw Transistor Simulation
+                        if (node.type === 'pmos') {
+                            const gate = getIncomingValue(id, 0);
+                            const source = getIncomingValue(id, 1);
+                            node.state = (gate === 0) ? source : -1;
+                        } else if (node.type === 'nmos') {
+                            const gate = getIncomingValue(id, 0);
+                            const source = getIncomingValue(id, 1);
+                            node.state = (gate === 1) ? source : -1;
+                        } else if (node.type === 'display') {
+                            const val = getIncomingValue(id, 'inputPort');
+                            node.state = (val !== -1) ? val : 0;
+                        }
+                    } else {
+                        // MESO/MACRO LOD: Freeze transistors to High-Z (Inactive)
+                        if (node.type === 'pmos' || node.type === 'nmos') {
+                            node.state = -1;
+                        }
+                    }
+                });
+
+                if (true) {
+                    // Abstraction Engine: Execute LUTs and override output drivers
+                    Core.macros.forEach(macro => {
+                        const inVals = macro.inputs.map(inId => {
+                            const n = Core.logic.get(inId);
+                            return n ? n.state : -1;
+                        });
+                        const outVal = macro.lutFn(...inVals);
+
+                        // Force the output transistors to carry the LUT result
+                        if (Array.isArray(outVal)) {
+                            for (let i = 0; i < outVal.length; i++) {
+                                if (!macro.outputDrivers[i]) continue;
+                                macro.outputDrivers[i].forEach(outId => {
+                                    const n = Core.logic.get(outId);
+                                    if (n) n.state = outVal[i];
+                                });
+                            }
+                        } else {
+                            macro.outputDrivers.forEach(outId => {
+                                const n = Core.logic.get(outId);
+                                if (n) n.state = outVal;
+                            });
+                        }
+                    });
+
+                    // Evaluate displays once after LUT forces output driver states
+                    Core.logic.forEach((node, id) => {
+                        if (node.type === 'display') {
+                            const val = getIncomingValue(id, 'inputPort');
+                            node.state = (val !== -1) ? val : 0;
+                        }
+                    });
+                }
+            }
+
+            // Highlighting live truth table visually
+            if (activePreset === 1) {
+                const switchA = Core.logic.get('sw_a');
+                const switchB = Core.logic.get('sw_b');
+                if (switchA && switchB) {
+                    updateTruthTableUI(switchA.state, switchB.state);
+                }
+            }
+        }
+
+        // Simulates a circuit Node. Resolves multiple intersecting wires.
+        function getIncomingValue(toId, toPort) {
+            const wires = Core.wires.filter(w => w.to === toId && w.toPort === toPort);
+            if (wires.length === 0) return -1; // Floating Z-state
+
+            let result = -1;
+            for (let w of wires) {
+                const srcLogic = Core.logic.get(w.from);
+                if (srcLogic && srcLogic.state !== -1) {
+                    result = srcLogic.state;
+                }
+            }
+            return result;
+        }
+
+        function updateTruthTableUI(a, b) {
+            ['row-00', 'row-01', 'row-10', 'row-11'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.className = "flex justify-between gap-4 px-1 rounded transition-colors text-neutral-400";
+            });
+            const activeId = `row-${a}${b}`;
+            const activeEl = document.getElementById(activeId);
+            if (activeEl) {
+                activeEl.className = "flex justify-between gap-4 px-1 rounded text-indigo-600 font-bold bg-indigo-50/50";
+            }
+        }
+
+        function zoomAtScreenPoint(factor, screenX, screenY) {
+            const worldPos = screenToWorld(screenX, screenY);
+            zoom *= factor;
+            zoom = Math.max(0.20, Math.min(1.5, zoom));
+
+            const scale = getActualScale();
+            pan.x = screenX - worldPos.x * scale;
+            pan.y = screenY - worldPos.y * scale;
+        }
+
+        // ==========================================
+        // THE CANVAS (Rendering & Culling engine)
+        // ==========================================
+        function getLODModeRaw() {
+            if (zoom <= 0.45) return 'Macro';
+            if (zoom <= 0.80) return 'Meso';
+            return 'Micro';
+        }
+
+        function getLODMode() {
+            if (manualLodOverride !== 'Dynamic') return manualLodOverride;
+            return getLODModeRaw();
+        }
+
+        function isVisible(vis) {
+            const scale = getActualScale();
+            const pad = 120;
+            const screenLeft = -pan.x / scale - pad;
+            const screenRight = (canvas.width - pan.x) / scale + pad;
+            const screenTop = -pan.y / scale - pad;
+            const screenBottom = (canvas.height - pan.y) / scale + pad;
+
+            return !(vis.x + vis.width < screenLeft || vis.x > screenRight || vis.y + vis.height < screenTop || vis.y > screenBottom);
+        }
+
+        function drawGrid() {
+            const scale = getActualScale();
+            const tiers = [
+                { spacing: 10, color: '#f5f5f5' },
+                { spacing: 40, color: '#eeeeee' },
+                { spacing: 160, color: '#e0e0e0' },
+                { spacing: 640, color: '#d4d4d8' }
+            ];
+
+            tiers.forEach(tier => {
+                const screenDistance = tier.spacing * scale;
+                let opacity = 0;
+                if (screenDistance >= 12) {
+                    if (screenDistance < 36) opacity = (screenDistance - 12) / 24;
+                    else if (screenDistance < 144) opacity = 1.0;
+                    else if (screenDistance < 288) opacity = 1.0 - ((screenDistance - 144) / 144) * 0.8;
+                    else opacity = 0.2;
+                }
+                if (opacity <= 0) return;
+
+                ctx.globalAlpha = opacity * 0.55;
+                ctx.strokeStyle = tier.color;
+                ctx.lineWidth = 1 / scale;
+
+                const gridSize = tier.spacing;
+                const startX = Math.floor((-pan.x / scale) / gridSize) * gridSize;
+                const endX = Math.ceil(((canvas.width - pan.x) / scale) / gridSize) * gridSize;
+                const startY = Math.floor((-pan.y / scale) / gridSize) * gridSize;
+                const endY = Math.ceil(((canvas.height - pan.y) / scale) / gridSize) * gridSize;
+
+                ctx.beginPath();
+                for (let x = startX; x <= endX; x += gridSize) {
+                    ctx.moveTo(x, startY);
+                    ctx.lineTo(x, endY);
+                }
+                for (let y = startY; y <= endY; y += gridSize) {
+                    ctx.moveTo(startX, y);
+                    ctx.lineTo(endX, y);
+                }
+                ctx.stroke();
+            });
+            ctx.globalAlpha = 1.0;
+
+            // Simple Axis Origin lines
+            ctx.beginPath();
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1.5 / scale;
+            ctx.moveTo(0, -pan.y / scale);
+            ctx.lineTo(0, (canvas.height - pan.y) / scale);
+            ctx.moveTo(-pan.x / scale, 0);
+            ctx.lineTo((canvas.width - pan.x) / scale, 0);
+            ctx.stroke();
+        }
+
+        function drawBlocks() {
+            const lod = getLODMode();
+            const scale = getActualScale();
+
+            // Clear current collision bounds for mouse interaction mapping
+            currentGroupBounds.clear();
+
+            // Group visuals together
+            const groupsMap = new Map();
+            Core.visuals.forEach(vis => {
+                const gName = (lod === 'Macro' && vis.macroGroup) ? vis.macroGroup : vis.group;
+                if (!groupsMap.has(gName)) groupsMap.set(gName, []);
+                groupsMap.get(gName).push(vis);
+            });
+
+            groupsMap.forEach((groupVisuals, groupName) => {
+                if (groupVisuals.length === 0) return;
+
+                let minX = Infinity, minY = Infinity;
+                let maxX = -Infinity, maxY = -Infinity;
+
+                groupVisuals.forEach(vis => {
+                    if (vis.x < minX) minX = vis.x;
+                    if (vis.y < minY) minY = vis.y;
+                    if (vis.x + vis.width > maxX) maxX = vis.x + vis.width;
+                    if (vis.y + vis.height > maxY) maxY = vis.y + vis.height;
+                });
+
+                let desc = "";
+                let descLines = [];
+                const gn = groupName.toUpperCase();
+                if (gn.includes('NAND')) desc = "(ANY 0 = 1)";
+                else if (gn.includes('NOR')) desc = "(ALL 0s = 1)";
+                else if (gn.includes('XOR')) desc = "(DIFF = 1)";
+                else if (gn.includes('AND')) desc = "(ALL 1s = 1)";
+                else if (gn.includes('OR')) desc = "(ANY 1 = 1)";
+                else if (gn.includes('NOT')) desc = "(INVERTS)";
+                else if (gn.includes('TG') || gn.includes('TRANS')) {
+                    descLines = [
+                        "HOW IT WORKS: Connects SIGNAL to OUT.",
+                        "TO OPERATE:",
+                        "1. Turn ENABLE ON (1)",
+                        "2. Turn EN_BAR OFF (0)"
+                    ];
+                }
+                else if (gn.includes('LATCH')) {
+                    descLines = [
+                        "HOW IT WORKS: A simple memory that listens to D.",
+                        "TO OPERATE:",
+                        "1. E=1, E_B=0 -> Q copies D",
+                        "2. E=0, E_B=1 -> Q locks and remembers"
+                    ];
+                }
+                else if (gn.includes('FF') || gn.includes('FLIP-FLOP')) {
+                    descLines = [
+                        "HOW IT WORKS: Secure memory saved on a clock tick.",
+                        "TO OPERATE:",
+                        "1. Set CLK=0, CLK_B=1, then set D",
+                        "2. Flip CLK=1, CLK_B=0 to save D to Q"
+                    ];
+                }
+                else if (gn.includes('REG')) {
+                    descLines = [
+                        "HOW IT WORKS: Saves 8 bits (a byte) of memory.",
+                        "TO OPERATE:",
+                        "1. Set 8 Data switches (D0-D7)",
+                        "2. Set CLK=0, CLK_B=1",
+                        "3. Flip CLK=1, CLK_B=0 to save all 8!"
+                    ];
+                }
+
+                if (desc && descLines.length === 0) {
+                    descLines = [desc];
+                }
+
+                const pad = 24;
+                minX -= pad;
+                minY -= pad + 12;
+                maxX += pad; maxY += pad;
+                const width = maxX - minX;
+                const height = maxY - minY;
+
+                // Track bounding box data globally so drag events know where the block is
+                currentGroupBounds.set(groupName, { x: minX, y: minY, w: width, h: height });
+
+                if (lod === 'Micro') {
+                    // Border Design for Micro
+                    ctx.save();
+                    ctx.strokeStyle = '#cbd5e1';
+                    ctx.lineWidth = 1.5 / scale;
+                    ctx.setLineDash([6, 6]);
+                    ctx.beginPath();
+
+                    let drawMinY = minY;
+                    let drawHeight = height;
+                    if (descLines.length > 1) {
+                        const extraSpace = descLines.length * 16;
+                        drawMinY -= extraSpace;
+                        drawHeight += extraSpace;
+                    }
+
+                    ctx.roundRect(minX, drawMinY, width, drawHeight, 12);
+                    ctx.stroke();
+                    ctx.restore();
+
+                    // Draw Section Titles in blueprint corner
+                    ctx.save();
+                    ctx.fillStyle = '#64748b';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'top';
+
+                    ctx.font = 'bold 16px system-ui';
+                    ctx.fillText(gn, minX + 8, drawMinY + 8);
+
+                    ctx.font = 'bold 12px system-ui';
+                    ctx.fillStyle = '#94a3b8';
+                    let textY = drawMinY + 28;
+                    descLines.forEach(line => {
+                        ctx.fillText(line, minX + 8, textY);
+                        textY += 16;
+                    });
+                    ctx.restore();
+                } else {
+                    // Solid Silicon Block for Meso / Macro
+                    ctx.save();
+                    ctx.shadowColor = 'rgba(15, 23, 42, 0.2)';
+                    ctx.shadowBlur = 12;
+                    ctx.shadowOffsetY = 4;
+
+                    ctx.fillStyle = '#1e293b';
+                    ctx.beginPath();
+                    ctx.roundRect(minX, minY, width, height, 16);
+                    ctx.fill();
+
+                    ctx.shadowColor = 'transparent';
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.font = lod === 'Meso' ? 'bold 48px monospace' : 'bold 72px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    const macro = Core.macros.get(groupName);
+                    const label = macro ? macro.label : groupName.toUpperCase();
+
+                    ctx.translate(minX + width / 2, minY + height / 2);
+                    if (height > width * 1.5) {
+                        ctx.rotate(-Math.PI / 2);
+                        ctx.fillText(label, 0, 0, height - 32);
+                        if (lod === 'Meso' && desc) {
+                            ctx.font = 'bold 16px monospace';
+                            ctx.fillStyle = '#64748b';
+                            ctx.fillText(desc, 0, 30, height - 32);
+                        }
+                    } else {
+                        ctx.fillText(label, 0, 0, width - 32);
+                        if (lod === 'Meso' && desc) {
+                            ctx.font = 'bold 16px monospace';
+                            ctx.fillStyle = '#64748b';
+                            ctx.fillText(desc, 0, 30, width - 32);
+                        }
+                    }
+                    ctx.restore();
+                }
+            });
+        }
+
+        function drawWire(wire) {
+            const fromVis = Core.visuals.get(wire.from);
+            const toVis = Core.visuals.get(wire.to);
+            if (!fromVis || !toVis) return;
+
+            // Ask Logic Engine for connection State
+            const logicSource = Core.logic.get(wire.from);
+            const logicDest = Core.logic.get(wire.to);
+            const state = logicSource ? logicSource.state : -1;
+
+            // Hide completely internal wires in Meso/Macro mode
+            const lod = getLODMode();
+            const fromGroup = (lod === 'Macro' && fromVis.macroGroup) ? fromVis.macroGroup : fromVis.group;
+            const toGroup = (lod === 'Macro' && toVis.macroGroup) ? toVis.macroGroup : toVis.group;
+
+            if (lod !== 'Micro' && fromGroup === toGroup) {
+                return; // Absolutely NO internal micro-routing shown in Meso!
+            }
+
+            const scale = getActualScale();
+            let startX = fromVis.x + fromVis.outputPort.x;
+            let startY = fromVis.y + fromVis.outputPort.y;
+
+            let endX, endY;
+            if (typeof wire.toPort === 'number') {
+                const inputDef = toVis.inputs[wire.toPort];
+                endX = toVis.x + inputDef.port.x;
+                endY = toVis.y + inputDef.port.y;
+            } else {
+                endX = toVis.x + toVis.inputPort.x;
+                endY = toVis.y + toVis.inputPort.y;
+            }
+
+            // In Meso mode, snap wires to the outer border of the blocks instead of piercing inside
+            if (lod !== 'Micro') {
+                if (currentGroupBounds.has(fromGroup)) {
+                    const bounds = currentGroupBounds.get(fromGroup);
+                    if (startX >= bounds.x && startX <= bounds.x + bounds.w &&
+                        startY >= bounds.y && startY <= bounds.y + bounds.h) {
+                        // Outputs flow OUT, so they emit from the RIGHT edge
+                        startX = bounds.x + bounds.w;
+                    }
+                }
+                if (currentGroupBounds.has(toGroup)) {
+                    const bounds = currentGroupBounds.get(toGroup);
+                    if (endX >= bounds.x && endX <= bounds.x + bounds.w &&
+                        endY >= bounds.y && endY <= bounds.y + bounds.h) {
+                        // Inputs flow IN, so they enter from the LEFT edge
+                        endX = bounds.x;
+
+                        // We keep endY pointing to its true transistor destination height so that the trunk can branch correctly!
+                    }
+                }
+            }
+
+            const minX = Math.min(startX, endX);
+            const maxX = Math.max(startX, endX);
+            const minY = Math.min(startY, endY);
+            const maxY = Math.max(startY, endY);
+
+            // Cull entire wire if completely off-screen
+            const sLeft = -pan.x / scale - 150;
+            const sRight = (canvas.width - pan.x) / scale + 150;
+            const sTop = -pan.y / scale - 150;
+            const sBottom = (canvas.height - pan.y) / scale + 150;
+
+            if (maxX < sLeft || minX > sRight || maxY < sTop || minY > sBottom) {
+                return; // Entire wire is off-screen, skip all curve rendering!
+            }
+
+            // Colors based on state: 1 (Indigo), 0 (Slate), Floating/Z (Light Grey)
+            let color = '#cbd5e1';
+            if (state === 1) color = '#4f46e5';
+            else if (state === 0) color = '#475569';
+
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+
+            // We want Orthogonal routing ONLY for global bus signals (like the Clock) that distribute vertically over many blocks.
+            // Point-to-point data signals (like D inputs) should use smooth Bezier curves.
+            const isBus = wire.from.toLowerCase().includes('clk');
+            const isOrthogonal = fromGroup !== toGroup && isBus;
+
+            // Stagger parallel buses deterministically to prevent any vertical overlap
+            let trunkOffset = 0;
+            if (isOrthogonal) {
+                // Manually assign separate, fixed lanes for known bus signals
+                if (wire.from.toLowerCase().includes('clkb')) trunkOffset = 20;
+                else if (wire.from.toLowerCase().includes('clk')) trunkOffset = -20;
+            }
+
+            const trunkX = startX + Math.max(40, (endX - startX) * 0.5) + trunkOffset;
+
+            if (isOrthogonal) {
+                // Orthogonal routing (Manhattan bus style)
+                ctx.lineTo(trunkX, startY);
+                ctx.lineTo(trunkX, endY);
+                ctx.lineTo(endX, endY);
+            } else {
+                // Curved Bezier routing
+                const controlOffset = Math.max(40, Math.abs(endX - startX) * 0.5);
+                ctx.bezierCurveTo(
+                    startX + controlOffset, startY,
+                    endX - controlOffset, endY,
+                    endX, endY
+                );
+            }
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2.5 / scale;
+            ctx.stroke();
+
+            // Flow particles ONLY if line is driven High (1) or Low (0). No particles for Floating lines.
+            // Explicitly hidden in Meso/Macro mode for a cleaner high-level view.
+            if (state !== -1 && lod === 'Micro') {
+                ctx.fillStyle = state === 1 ? '#c7d2fe' : '#94a3b8';
+                const t = (Date.now() % 2000) / 2000;
+                let px, py;
+
+                if (isOrthogonal) {
+                    const l1 = Math.abs(trunkX - startX);
+                    const l2 = Math.abs(endY - startY);
+                    const l3 = Math.abs(endX - trunkX);
+                    const totalL = l1 + l2 + l3;
+                    const d = t * totalL;
+
+                    if (d < l1) {
+                        px = startX + (trunkX > startX ? d : -d);
+                        py = startY;
+                    } else if (d < l1 + l2) {
+                        px = trunkX;
+                        const rem = d - l1;
+                        py = startY + (endY > startY ? rem : -rem);
+                    } else {
+                        const rem = d - (l1 + l2);
+                        px = trunkX + (endX > trunkX ? rem : -rem);
+                        py = endY;
+                    }
+                } else {
+                    const controlOffset = Math.max(40, Math.abs(endX - startX) * 0.5);
+                    const cx1 = startX + controlOffset, cy1 = startY;
+                    const cx2 = endX - controlOffset, cy2 = endY;
+                    px = (1 - t) ** 3 * startX + 3 * (1 - t) ** 2 * t * cx1 + 3 * (1 - t) * t ** 2 * cx2 + t ** 3 * endX;
+                    py = (1 - t) ** 3 * startY + 3 * (1 - t) ** 2 * t * cy1 + 3 * (1 - t) * t ** 2 * cy2 + t ** 3 * endY;
+                }
+
+                ctx.beginPath();
+                ctx.arc(px, py, 4.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Accepts purely visual info (vis) and purely logic info (logic)
+        function drawComponent(vis, logic) {
+            const lod = getLODMode();
+
+            // Base State Color Resolver
+            let colorBase = '#f1f5f9';
+            let colorStroke = '#475569';
+            let colorText = '#0f172a';
+
+            if (logic.state === 1) {
+                colorBase = '#e0e7ff'; colorStroke = '#4f46e5'; colorText = '#4338ca';
+            } else if (logic.state === 0) {
+                colorBase = '#f8fafc'; colorStroke = '#475569'; colorText = '#0f172a';
+            } else {
+                // High-Z Floating
+                colorBase = '#ffffff'; colorStroke = '#cbd5e1'; colorText = '#94a3b8';
+            }
+
+            // Power Rail Overrides
+            if (logic.type === 'vcc') { colorBase = '#fee2e2'; colorStroke = '#ef4444'; colorText = '#b91c1c'; }
+            if (logic.type === 'gnd') { colorBase = '#dcfce7'; colorStroke = '#22c55e'; colorText = '#15803d'; }
+
+            // 1. MACRO RENDERING TIER
+            if (lod === 'Macro') {
+                ctx.save();
+                ctx.fillStyle = colorBase;
+                ctx.strokeStyle = colorStroke;
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.roundRect(vis.x, vis.y, vis.width, vis.height, 8);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = colorText;
+                ctx.font = 'bold 15px system-ui';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                let macroTag = vis.macroLabel || 'BLOCK';
+                if (logic.type === 'pmos') macroTag = 'pMOS';
+                else if (logic.type === 'nmos') macroTag = 'nMOS';
+                else if (logic.type === 'vcc') macroTag = 'VCC';
+                else if (logic.type === 'gnd') macroTag = 'GND';
+
+                ctx.fillText(macroTag, vis.x + vis.width / 2, vis.y + vis.height / 2);
+                ctx.restore();
+                return;
+            }
+
+            // 2. MESO RENDERING TIER
+            if (lod === 'Meso') {
+                ctx.save();
+
+                // High contrast styling for clear ON vs OFF changes
+                const isHigh = logic.state === 1;
+                ctx.fillStyle = isHigh ? '#4f46e5' : '#f8fafc'; // Solid indigo when ON, light gray when OFF
+                ctx.strokeStyle = isHigh ? '#4338ca' : '#94a3b8';
+                ctx.lineWidth = 3;
+
+                ctx.beginPath();
+                ctx.roundRect(vis.x, vis.y, vis.width, vis.height, 10);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = isHigh ? '#ffffff' : '#0f172a'; // White text on indigo, dark text on gray
+                ctx.font = 'bold 15px monospace'; // slightly larger, readable monospace font
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                let label = vis.macroLabel || 'BLOCK';
+                if (logic.type === 'switch') label = `${vis.macroLabel || 'SW'}: ${logic.state}`; // Explicitly show the 1 or 0
+                if (logic.type === 'display') label = logic.state !== -1 ? `${vis.macroLabel || 'OUT'}: ${logic.state}` : `${vis.macroLabel || 'OUT'}: Z`;
+
+                ctx.fillText(label, vis.x + vis.width / 2, vis.y + vis.height / 2);
+                ctx.restore();
+                return;
+            }
+
+            // 3. MICRO RENDERING TIER
+            ctx.save();
+            ctx.shadowColor = 'rgba(15, 23, 42, 0.05)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetY = 4;
+
+            ctx.fillStyle = colorBase;
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.roundRect(vis.x, vis.y, vis.width, vis.height, 8);
+            ctx.fill();
+            ctx.shadowColor = 'transparent';
+            ctx.stroke();
+
+            // Toggle Switches
+            if (logic.type === 'switch') {
+                const btnW = 44;
+                const btnH = 20;
+                const btnX = vis.x + (vis.width - btnW) / 2;
+                const btnY = vis.y + (vis.height - btnH) / 2 + 5;
+
+                ctx.fillStyle = '#64748b';
+                ctx.font = '8px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(vis.macroLabel || "SWITCH", vis.x + vis.width / 2, vis.y + 12);
+
+                ctx.fillStyle = logic.state === 1 ? '#4f46e5' : '#e2e8f0';
+                ctx.beginPath();
+                ctx.roundRect(btnX, btnY, btnW, btnH, 10);
+                ctx.fill();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                const headX = logic.state === 1 ? btnX + btnW - 10 : btnX + 10;
+                ctx.arc(headX, btnY + btnH / 2, 7, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = logic.state === 1 ? '#4f46e5' : '#94a3b8';
+                ctx.beginPath();
+                ctx.arc(vis.x + vis.outputPort.x, vis.y + vis.outputPort.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Power Rails (VCC / GND)
+            } else if (logic.type === 'vcc' || logic.type === 'gnd') {
+                ctx.fillStyle = colorText;
+                ctx.font = 'bold 12px system-ui';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(logic.type.toUpperCase(), vis.x + vis.width / 2, vis.y + vis.height / 2);
+
+                ctx.fillStyle = logic.type === 'vcc' ? '#ef4444' : '#22c55e';
+                ctx.beginPath();
+                ctx.arc(vis.x + vis.outputPort.x, vis.y + vis.outputPort.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // CMOS Transistors
+            } else if (logic.type === 'pmos' || logic.type === 'nmos') {
+                ctx.strokeStyle = '#475569';
+                ctx.lineWidth = 2.5;
+
+                // Simple Transistor Diagram
+                const gx = vis.x + 22;
+                const gy = vis.y + 20;
+
+                // Draw Gate Plate
+                ctx.beginPath();
+                ctx.moveTo(gx, gy);
+                ctx.lineTo(gx, gy + 20);
+                ctx.stroke();
+
+                // Draw Channel
+                ctx.beginPath();
+                ctx.moveTo(gx + 8, gy - 5);
+                ctx.lineTo(gx + 8, gy + 25);
+                ctx.stroke();
+
+                // pMOS Specific: Negation Bubble on Gate Input
+                if (logic.type === 'pmos') {
+                    ctx.beginPath();
+                    ctx.arc(vis.x + 10, vis.y + 15, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fill();
+                    ctx.stroke();
+                }
+
+                // Input Connectors (Gate & Source)
+                vis.inputs.forEach(input => {
+                    ctx.fillStyle = '#cbd5e1';
+                    ctx.beginPath();
+                    ctx.arc(vis.x + input.port.x, vis.y + input.port.y, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                });
+
+                // Output connection (Drain)
+                ctx.fillStyle = logic.state !== -1 ? (logic.state === 1 ? '#4f46e5' : '#475569') : '#cbd5e1';
+                ctx.beginPath();
+                ctx.arc(vis.x + vis.outputPort.x, vis.y + vis.outputPort.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Gate text tag
+                ctx.fillStyle = '#64748b';
+                ctx.font = 'bold 9px system-ui';
+                ctx.textAlign = 'center';
+                ctx.fillText(logic.type === 'pmos' ? 'pMOS' : 'nMOS', vis.x + vis.width / 2 + 10, vis.y + vis.height - 12);
+
+                // Display elements
+            } else if (logic.type === 'display') {
+                ctx.fillStyle = logic.state === 1 ? '#4f46e5' : (logic.state === 0 ? '#0f172a' : '#94a3b8');
+                ctx.font = 'bold 24px monospace';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const dispText = logic.state !== -1 ? logic.state : 'Z';
+                ctx.fillText(dispText, vis.x + vis.width / 2, vis.y + vis.height / 2 + 4);
+
+                ctx.fillStyle = '#64748b';
+                ctx.font = '8px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(vis.macroLabel || "OUTPUT", vis.x + vis.width / 2, vis.y + 12);
+
+                // Input connector
+                ctx.fillStyle = logic.state === 1 ? '#4f46e5' : '#cbd5e1';
+                ctx.beginPath();
+                ctx.arc(vis.x + vis.inputPort.x, vis.y + vis.inputPort.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            // Outline selected dragged elements
+            if (draggedVisual === vis) {
+                ctx.strokeStyle = '#4f46e5';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(vis.x - 3, vis.y - 3, vis.width + 6, vis.height + 6);
+            }
+
+            ctx.restore();
+        }
+
+        // --- Core 60FPS Draw Loop ---
+        function draw() {
+            const currentLOD = getLODMode();
+            document.getElementById('lod-indicator').innerText = currentLOD;
+            document.getElementById('zoom-indicator').innerText = `${Math.round(zoom * 100)}%`;
+
+            // Update LOD segment button styles dynamically based on state
+            ['Dynamic', 'Micro', 'Meso', 'Macro'].forEach(mode => {
+                const btn = document.getElementById(`lod-${mode.substring(0, 3).toLowerCase()}-btn`);
+                if (btn) {
+                    if (manualLodOverride === mode) {
+                        btn.className = "flex-1 px-1.5 py-1 text-[10px] rounded font-bold bg-white shadow-sm text-indigo-700 transition";
+                    } else {
+                        btn.className = "flex-1 px-1.5 py-1 text-[10px] rounded font-medium text-neutral-500 hover:text-neutral-700 transition";
+                    }
+                }
+            });
+
+            const truthTablePanel = document.getElementById('truth-table-panel');
+            if (truthTablePanel) {
+                if (activePreset === 1 && currentLOD === 'Micro' && isUiVisible) {
+                    truthTablePanel.style.display = 'block';
+                } else {
+                    truthTablePanel.style.display = 'none';
+                }
+            }
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            ctx.translate(pan.x, pan.y);
+
+            const actualScale = getActualScale();
+            ctx.scale(actualScale, actualScale);
+
+            drawGrid();
+            drawBlocks();
+
+            // Do not render wires in Macro mode
+            if (getLODMode() !== 'Macro') {
+                Core.wires.forEach(drawWire);
+            }
+
+            // Fetch explicitly separated visuals and logic
+            Core.visuals.forEach((vis, id) => {
+                if (isVisible(vis)) {
+                    const logic = Core.logic.get(vis.logicId);
+                    if (logic) {
+                        // In Macro mode, do not render ANY individual components (switches, displays, etc.)
+                        // to show a completely clean, high-level block diagram architecture.
+                        if (getLODMode() === 'Macro') {
+                            return;
+                        }
+                        // In Meso, skip drawing internal math components entirely.
+                        // (We keep 'switch' and 'display' rendered on top of the block!)
+                        if (getLODMode() === 'Meso' && ['pmos', 'nmos', 'vcc', 'gnd'].includes(logic.type)) {
+                            return;
+                        }
+                        drawComponent(vis, logic);
+                    }
+                }
+            });
+
+            ctx.restore();
+            requestAnimationFrame(draw);
+        }
+
+        // ==========================================
+        // MOUSE & USER GESTURE INTERACTIONS
+        // ==========================================
+        function getVisualAtWorld(worldPos) {
+            for (let [id, vis] of Core.visuals) {
+                if (worldPos.x >= vis.x && worldPos.x <= vis.x + vis.width &&
+                    worldPos.y >= vis.y && worldPos.y <= vis.y + vis.height) {
+                    return vis;
+                }
+            }
+            return null;
+        }
+
+        canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            const worldPos = screenToWorld(mousePos.x, mousePos.y);
+            const lod = getLODMode();
+
+            if (e.button === 2) {
+                isPanning = true;
+                startPan = { x: mousePos.x - pan.x, y: mousePos.y - pan.y };
+                return;
+            }
+
+            const clickedVis = getVisualAtWorld(worldPos);
+
+            if (clickedVis) {
+                const logic = Core.logic.get(clickedVis.logicId);
+                // Interact with logic ONLY if it's a switch. (Allow at ALL LODs)
+                if (logic && logic.type === 'switch') {
+                    logic.state = logic.state === 1 ? 0 : 1;
+                    evaluateCircuit();
+                    return;
+                }
+
+                // If in Micro mode, drag individual nodes
+                if (lod === 'Micro') {
+                    draggedVisual = clickedVis;
+                    dragOffset.x = worldPos.x - clickedVis.x;
+                    dragOffset.y = worldPos.y - clickedVis.y;
+                    return;
+                }
+            }
+
+            // If in Meso/Macro mode, drag the entire block
+            if (lod !== 'Micro') {
+                for (let [gName, bounds] of currentGroupBounds) {
+                    if (worldPos.x >= bounds.x && worldPos.x <= bounds.x + bounds.w &&
+                        worldPos.y >= bounds.y && worldPos.y <= bounds.y + bounds.h) {
+
+                        draggedGroup = gName;
+                        groupDragOffsets.clear();
+
+                        // Record offsets for every component in the group to move them as a solid chip
+                        Core.visuals.forEach(v => {
+                            const vgName = (lod === 'Macro' && v.macroGroup) ? v.macroGroup : v.group;
+                            if (vgName === draggedGroup) {
+                                groupDragOffsets.set(v.logicId, { dx: worldPos.x - v.x, dy: worldPos.y - v.y });
+                            }
+                        });
+                        return;
+                    }
+                }
+            }
+
+            // If clicking empty canvas, start panning
+            isPanning = true;
+            startPan = { x: mousePos.x - pan.x, y: mousePos.y - pan.y };
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+
+            if (draggedGroup) {
+                const worldPos = screenToWorld(mousePos.x, mousePos.y);
+                const snapSize = 5;
+                const lod = getLODMode();
+                Core.visuals.forEach(v => {
+                    const vgName = (lod === 'Macro' && v.macroGroup) ? v.macroGroup : v.group;
+                    if (vgName === draggedGroup) {
+                        const offset = groupDragOffsets.get(v.logicId);
+                        v.x = Math.round((worldPos.x - offset.dx) / snapSize) * snapSize;
+                        v.y = Math.round((worldPos.y - offset.dy) / snapSize) * snapSize;
+                    }
+                });
+            } else if (draggedVisual) {
+                const worldPos = screenToWorld(mousePos.x, mousePos.y);
+                const snapSize = 5;
+                draggedVisual.x = Math.round((worldPos.x - dragOffset.x) / snapSize) * snapSize;
+                draggedVisual.y = Math.round((worldPos.y - dragOffset.y) / snapSize) * snapSize;
+            } else if (isPanning) {
+                pan.x = mousePos.x - startPan.x;
+                pan.y = mousePos.y - startPan.y;
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            draggedVisual = null;
+            draggedGroup = null;
+            isPanning = false;
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const mX = e.clientX - rect.left;
+            const mY = e.clientY - rect.top;
+
+            const oldLOD = getLODMode();
+
+            if (isSpacePressed) {
+                const step = 0.04;
+                const normalizedDelta = e.deltaY / 100;
+                const zoomFactor = Math.pow(1 + step, -normalizedDelta);
+                zoomAtScreenPoint(zoomFactor, mX, mY);
+            } else {
+                pan.x -= e.deltaX;
+                pan.y -= e.deltaY;
+            }
+
+            // Immediately switch evaluator mode if LOD crossed a threshold
+            if (oldLOD !== getLODMode()) {
+                evaluateCircuit();
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                const mX = touch.clientX - rect.left;
+                const mY = touch.clientY - rect.top;
+                const worldPos = screenToWorld(mX, mY);
+                const lod = getLODMode();
+
+                const clickedVis = getVisualAtWorld(worldPos);
+                if (clickedVis) {
+                    const logic = Core.logic.get(clickedVis.logicId);
+                    if (logic && logic.type === 'switch') {
+                        logic.state = logic.state === 1 ? 0 : 1;
+                        evaluateCircuit();
+                        return;
+                    }
+                    if (lod === 'Micro') {
+                        draggedVisual = clickedVis;
+                        dragOffset.x = worldPos.x - clickedVis.x;
+                        dragOffset.y = worldPos.y - clickedVis.y;
+                        return;
+                    }
+                }
+
+                // If in Meso/Macro mode, drag the entire block
+                if (lod !== 'Micro') {
+                    for (let [gName, bounds] of currentGroupBounds) {
+                        if (worldPos.x >= bounds.x && worldPos.x <= bounds.x + bounds.w &&
+                            worldPos.y >= bounds.y && worldPos.y <= bounds.y + bounds.h) {
+
+                            draggedGroup = gName;
+                            groupDragOffsets.clear();
+                            Core.visuals.forEach(v => {
+                                const vgName = (lod === 'Macro' && v.macroGroup) ? v.macroGroup : v.group;
+                                if (vgName === draggedGroup) {
+                                    groupDragOffsets.set(v.logicId, { dx: worldPos.x - v.x, dy: worldPos.y - v.y });
+                                }
+                            });
+                            return;
+                        }
+                    }
+                }
+
+                // Touch pan
+                isPanning = true;
+                startPan = { x: mX - pan.x, y: mY - pan.y };
+            }
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                const mX = touch.clientX - rect.left;
+                const mY = touch.clientY - rect.top;
+
+                if (draggedGroup) {
+                    const worldPos = screenToWorld(mX, mY);
+                    const snapSize = 5;
+                    const lod = getLODMode();
+                    Core.visuals.forEach(v => {
+                        const vgName = (lod === 'Macro' && v.macroGroup) ? v.macroGroup : v.group;
+                        if (vgName === draggedGroup) {
+                            const offset = groupDragOffsets.get(v.logicId);
+                            v.x = Math.round((worldPos.x - offset.dx) / snapSize) * snapSize;
+                            v.y = Math.round((worldPos.y - offset.dy) / snapSize) * snapSize;
+                        }
+                    });
+                } else if (draggedVisual) {
+                    const worldPos = screenToWorld(mX, mY);
+                    draggedVisual.x = Math.round(worldPos.x - dragOffset.x);
+                    draggedVisual.y = Math.round(worldPos.y - dragOffset.y);
+                } else if (isPanning) {
+                    pan.x = mX - startPan.x;
+                    pan.y = mY - startPan.y;
+                }
+            }
+        });
+
+        canvas.addEventListener('touchend', () => {
+            draggedVisual = null;
+            draggedGroup = null;
+            isPanning = false;
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                isSpacePressed = true;
+                e.preventDefault();
+            }
+
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                zoomAtScreenPoint(1.04, window.innerWidth / 2, window.innerHeight / 2);
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                zoomAtScreenPoint(1 / 1.04, window.innerWidth / 2, window.innerHeight / 2);
+            }
+
+            if (e.key === '1') loadPreset1();
+            else if (e.key === '2') loadPreset2();
+            else if (e.key === '3') loadPreset3();
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'Space') isSpacePressed = false;
+        });
+
+        document.getElementById('preset-1-btn').addEventListener('click', () => { document.getElementById('auto-clock-btn').classList.add('hidden'); autoClockEnabled = false; loadPreset1(); });
+        document.getElementById('preset-2-btn').addEventListener('click', () => { document.getElementById('auto-clock-btn').classList.add('hidden'); autoClockEnabled = false; loadPreset2(); });
+        document.getElementById('preset-3-btn').addEventListener('click', () => { document.getElementById('auto-clock-btn').classList.add('hidden'); autoClockEnabled = false; loadPreset3(); });
+        document.getElementById('preset-4-btn').addEventListener('click', loadPreset4);
+
+        document.getElementById('auto-clock-btn').addEventListener('click', () => {
+            autoClockEnabled = !autoClockEnabled;
+            const dot = document.getElementById('clock-status-dot');
+            if (autoClockEnabled) {
+                dot.classList.replace('bg-amber-400', 'bg-emerald-500');
+                dot.classList.add('animate-pulse');
+                masterClockInterval = setInterval(() => {
+                    if (activePreset !== 4) {
+                        clearInterval(masterClockInterval);
+                        return;
+                    }
+                    const clk = Core.logic.get('ff_clk');
+                    const clkb = Core.logic.get('ff_clkb');
+                    if (clk && clkb) {
+                        clk.state = clk.state === 1 ? 0 : 1;
+                        clkb.state = clkb.state === 1 ? 0 : 1;
+                        evaluateCircuit();
+                    }
+                }, 1000); // 1 tick per second to clearly see charge shifting
+            } else {
+                dot.classList.replace('bg-emerald-500', 'bg-amber-400');
+                dot.classList.remove('animate-pulse');
+                clearInterval(masterClockInterval);
+            }
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === '4') loadPreset4();
+        });
+
+        document.getElementById('ui-toggle-btn').addEventListener('click', () => {
+            isUiVisible = !isUiVisible;
+            const controls = document.getElementById('main-controls');
+            const toggleBtn = document.getElementById('ui-toggle-btn');
+
+            if (isUiVisible) {
+                controls.style.display = 'flex';
+                toggleBtn.innerText = 'Hide UI';
+            } else {
+                controls.style.display = 'none';
+                toggleBtn.innerText = 'Show UI';
+            }
+        });
+
+        document.getElementById('reset-view-btn').addEventListener('click', () => {
+            zoom = (activePreset === 1) ? 1.0 : 0.80; // 0.80 defaults preset 2 and 3 to Meso immediately
+            pan = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+        });
+
+        // Setup LOD Option Buttons
+        ['Dynamic', 'Micro', 'Meso', 'Macro'].forEach(mode => {
+            const btn = document.getElementById(`lod-${mode.substring(0, 3).toLowerCase()}-btn`);
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    manualLodOverride = mode;
+                    evaluateCircuit();
+                });
+            }
+        });
+
+        document.getElementById('copy-layout-btn').addEventListener('click', () => {
+            const layoutData = {};
+            Core.visuals.forEach((vis, id) => {
+                layoutData[id] = [Math.round(vis.x), Math.round(vis.y)];
+            });
+
+            const layoutStr = JSON.stringify(layoutData, null, 2);
+
+            // Hidden textarea trick to copy to clipboard (works inside iframes)
+            const textArea = document.createElement("textarea");
+            textArea.value = layoutStr;
+            document.body.appendChild(textArea);
+            textArea.select();
+
+            try {
+                document.execCommand('copy');
+                const btn = document.getElementById('copy-layout-btn');
+                const oldText = btn.innerText;
+                btn.innerText = 'Copied!';
+                setTimeout(() => btn.innerText = oldText, 2000);
+            } catch (err) {
+                console.error('Copy failed', err);
+            }
+
+            document.body.removeChild(textArea);
+        });
+
+        // Run default setup
+        loadPreset1();
+        requestAnimationFrame(draw);
+    </script>
+</body>
+
+</html>
